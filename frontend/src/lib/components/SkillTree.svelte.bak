@@ -95,62 +95,40 @@
 
   const spriteCache: Record<string, HTMLImageElement> = {};
   const spriteCacheActive: Record<string, HTMLImageElement> = {};
-  // Модифицируйте функцию drawSprite:
-	const drawSprite = (context: CanvasRenderingContext2D, path: string, pos: Point, active = false) => {
-	  let sprite = active ? inverseSpritesActive[path] : inverseSprites[path];
+  const drawSprite = (context: CanvasRenderingContext2D, path: string, pos: Point, active = false) => {
+    let sprite = active ? inverseSpritesActive[path] : inverseSprites[path];
 
-	  if (!sprite && active) {
-		sprite = inverseSprites[path];
-	  }
+    if (!sprite && active) {
+      sprite = inverseSprites[path];
+    }
 
-	  if (!sprite) {
-		console.warn(`Sprite not found: ${path}`);
-		return;
-	  }
+    const spriteSheetUrl = sprite.filename;
 
-	  const spriteSheetUrl = sprite.filename;
+    if (!(spriteSheetUrl in (active ? spriteCacheActive : spriteCache))) {
+      (active ? spriteCacheActive : spriteCache)[spriteSheetUrl] = new Image();
+      (active ? spriteCacheActive : spriteCache)[spriteSheetUrl].src = spriteSheetUrl;
+    }
 
-	  if (!(spriteSheetUrl in (active ? spriteCacheActive : spriteCache))) {
-		const img = new Image();
-		img.onerror = () => {
-		  console.warn(`Failed to load sprite sheet: ${spriteSheetUrl}`);
-		  // Можно добавить fallback логику здесь
-		};
-		img.src = spriteSheetUrl;
-		(active ? spriteCacheActive : spriteCache)[spriteSheetUrl] = img;
-	  }
+    const self = sprite.coords[path];
 
-	  const self = sprite.coords[path];
-	  if (!self) {
-		console.warn(`Sprite coordinates not found for: ${path}`);
-		return;
-	  }
+    const newWidth = (self.w / scaling) * drawScaling;
+    const newHeight = (self.h / scaling) * drawScaling;
 
-	  const img = (active ? spriteCacheActive : spriteCache)[spriteSheetUrl];
-	  if (!img.complete) return; // Не рисуем если изображение не загружено
+    const topLeftX = pos.x - newWidth / 2;
+    const topLeftY = pos.y - newHeight / 2;
 
-	  const newWidth = (self.w / scaling) * drawScaling;
-	  const newHeight = (self.h / scaling) * drawScaling;
-
-	  const topLeftX = pos.x - newWidth / 2;
-	  const topLeftY = pos.y - newHeight / 2;
-
-	  try {
-		context.drawImage(
-		  img,
-		  self.x,
-		  self.y,
-		  self.w,
-		  self.h,
-		  topLeftX,
-		  topLeftY,
-		  newWidth,
-		  newHeight
-		);
-	  } catch (e) {
-		console.warn(`Failed to draw sprite: ${path}`, e);
-	  }
-	};
+    context.drawImage(
+      (active ? spriteCacheActive : spriteCache)[spriteSheetUrl],
+      self.x,
+      self.y,
+      self.w,
+      self.h,
+      topLeftX,
+      topLeftY,
+      newWidth,
+      newHeight
+    );
+  };
 
   const wrapText = (text: string, context: CanvasRenderingContext2D, width: number): string[] => {
     const result = [];
